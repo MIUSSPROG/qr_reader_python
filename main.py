@@ -1,4 +1,6 @@
 import time
+from tkinter.filedialog import askopenfile
+
 from openpyxl import Workbook, load_workbook
 import cv2
 import pandas as pd
@@ -8,8 +10,10 @@ from tkinter import messagebox, CENTER
 import imutils
 from PIL import Image, ImageTk
 import PIL
+from datetime import date
 
 root = tk.Tk()
+root.title('Регистрация участников')
 root.geometry("800x600")
 # root.withdraw()
 cap = cv2.VideoCapture(0)
@@ -23,7 +27,8 @@ lbText.place(anchor=CENTER, relx=0.5, rely=0.5)
 
 def capture():
     try:
-        file = 'fio.xlsx'
+        # file = 'fio.xlsx'
+        file = 'test.xlsx'
         xl = pd.ExcelFile(file)
         active_sheet = xl.sheet_names[0]
         wordbook = load_workbook(filename=file)
@@ -41,8 +46,8 @@ def capture():
             lbimage.configure(image=img)
             for code in decode(frame):
                 # print(saved)
-                if str(code.data.decode('utf-8')) not in saved:
-                    new_fio = code.data.decode('utf-8')
+                if int(code.data.decode('utf-8')) not in saved:
+                    new_fio = int(code.data.decode('utf-8'))
                     sheet.append([new_fio])
                     wordbook.save(filename=file)
                     df = pd.read_excel(file, sheet_name=active_sheet)
