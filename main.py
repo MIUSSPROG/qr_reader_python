@@ -33,15 +33,15 @@ df = pd.read_excel(file, sheet_name=active_sheet)
 saved = df.values.tolist()
 print(active_sheet)
 print(saved)
-# print(sheets)
 
-# today = date.today()
-# d1 = today.strftime("%d/%m/%Y")
-d1 = "08-04-2022"
+today = date.today()
+d1 = today.strftime("%d/%m/%Y").replace('/','-')
+# d1 = "08-04-2022"
 print("d1 =", d1)
 if d1 not in sheets:
     wordbook.create_sheet(d1)
     wordbook[d1]['A1'] = 'ФИО'
+    wordbook[d1]['B1'] = 'Посещение'
     wordbook.save(file)
 
 # def capture():
