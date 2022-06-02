@@ -12,6 +12,7 @@ import imutils
 from PIL import Image, ImageTk
 import PIL
 from datetime import date, datetime
+from dateutil import parser
 
 root = tk.Tk()  # создание интерфейса
 root.title('Регистрация участников')
@@ -33,6 +34,8 @@ canvas.create_rectangle(10, 10, 320, 180, fill='', outline='', tags="indicator")
 
 file = 'test1.xlsx'  # название файла куда будет все сохраняться(должен быть в одном каталоге с исполняющим файлом)
 timer_dist = 10*10**9
+timer_dist_repeat = 10*60*10**9 # время задержки простоя
+timer_dist_repeat = 10 # время задержки между посещениями
 end = time.perf_counter_ns()
 # основная функция обработки данных с камеры(работает рекурсивно)
 def capture():
@@ -67,7 +70,7 @@ def capture():
             lbimage.imgtk = img # сохраняем в область для отображения
             lbimage.configure(image=img)
             today = date.today() # текущая дата(в формате 13/04/2022(слэш это плохо))
-            today = today.strftime("%d/%m/%Y").replace('/', '-') # меняем слэш на "-" для удобства
+            today = today.strftime("%Y/%m/%d").replace('/', '-') # меняем слэш на "-" для удобства
             for code in decode(frame): # расшифровываем что считала камера
 
                 if today not in sheets: # проверяем наличие в иксель файле листа с текущей датов
@@ -82,7 +85,7 @@ def capture():
 
                 df = pd.read_excel(file, sheet_name=today) # читаем содержимое листа с текущей датой
                 saved_visitors = df.values.tolist() # преобразовываем в спискок
-                saved_visitors_map = {item[0]: [item[0], item[1], item[2], item[3], item[4]] for item in saved_visitors} # для удобного обращения к данным по userId делаем словарь
+                saved_visitors_map = {item[0]: [item[0], item[1], item[2], item[3], item[4], item[5]] for item in saved_visitors} # для удобного обращения к данным по userId делаем словарь
                 saved_visitors_id = [int(item[0]) for item in saved_visitors] # список с userId
 
                 user_id = int(code.data.decode('utf-8')) # расшифровываем qr код (там userId)
@@ -102,23 +105,34 @@ def capture():
                             save_user(visited, today) # сохраняем
                             lbText.config(text="Последний пользователь\n" + str(visited[1]), font=("roboto", 30)) # выводим последнего пользователя
                             lbTextLimitMessage.config(text="") # очищаем лэйбл где ограничение лимита
-                            time.sleep(2) # чтобы сразу весь лимит не использовался делаем задержку считывания с камеры qr кода в 2 секунды
+                            time.sleep(0.5) # чтобы сразу весь лимит не использовался делаем задержку считывания с камеры qr кода в 2 секунды
                             canvas.itemconfigure('indicator', fill='#0f0')
                     end = time.perf_counter_ns()
                 else: # если есть такой уже пользователь в новом листе
-                    if (fio_map[user_id][3] - saved_visitors_map[user_id][4]) > 0: # проверяем, хвататет ли ему лимита на очередную регистрацию на мероприятие
-                        row = saved_visitors_id.index(user_id) # если хватает находим его позицию(номер строки) на листе
-                        workbook[today][f'E{row + 2}'] = saved_visitors_map[user_id][4] + 1 # и в ячейку столбца "посещение" добавляем +1
-                        workbook[today][f'F{row + 2}'] = datetime.now().strftime('%H:%M:%S')
-                        workbook.save(filename=file) # сохраняем все
-                        time.sleep(2) # очередная задержка
-                        canvas.itemconfigure('indicator', fill='#0f0')
-                    else: # если не хватило лимита, то пользователь исчерпал доступный запас
-                        lbTextLimitMessage.config(
-                            text=f"Пользователь {saved_visitors_map[user_id][1]} исчерпал(а) лимит посещений на {today}",
-                            fg='#f00')
-                        lbText.config(text="Последний пользователь\n" + str(saved_visitors[-1][1]), font=("roboto", 30))
-                        canvas.itemconfigure('indicator', fill='#f00')
+                    last_saved_time = parser.parse(today + " " + saved_visitors_map[user_id][5]).timestamp()
+                    cur_time = datetime.now().timestamp()
+                    if abs(last_saved_time - cur_time) > timer_dist_repeat:
+                        if (fio_map[user_id][3] - saved_visitors_map[user_id][4]) > 0: # проверяем, хвататет ли ему лимита на очередную регистрацию на мероприятие
+                            # print("строка в дату: " + str(last_saved_time))
+                            # print("текущее время: " + str(cur_time))
+                            # print("разница: ", abs(last_saved_time - cur_time))
+                            row = saved_visitors_id.index(user_id) # если хватает находим его позицию(номер строки) на листе
+                            workbook[today][f'E{row + 2}'] = saved_visitors_map[user_id][4] + 1 # и в ячейку столбца "посещение" добавляем +1
+                            workbook[today][f'F{row + 2}'] = datetime.now().strftime('%H:%M:%S')
+                            workbook.save(filename=file) # сохраняем все
+                            # time.sleep(0.5) # очередная задержка
+                            lbText.config(text="Последний пользователь\n" + str(saved_visitors_map[user_id][1]), font=("roboto", 30)) # выводим последнего пользователя
+                            lbTextLimitMessage.config(text="") # очищаем лэйбл где ограничение лимита
+                            canvas.itemconfigure('indicator', fill='#0f0')
+                            # else:
+                            #     lbText.config(text="Пользователь\n" + str(saved_visitors[-1][1] + "в ожидании"),
+                            #                   font=("roboto", 30))
+                        else: # если не хватило лимита, то пользователь исчерпал доступный запас
+                            lbTextLimitMessage.config(
+                                text=f"Пользователь {saved_visitors_map[user_id][1]} исчерпал(а) лимит посещений на {today}",
+                                fg='#f00')
+                            lbText.config(text="Последний пользователь\n" + str(saved_visitors[-1][1]), font=("roboto", 30))
+                            canvas.itemconfigure('indicator', fill='#f00')
                     end = time.perf_counter_ns()
 
             root.after(1, capture) # здесь происходит самовызов функции для повторного считывания, таким образом имитируя непрерывную работу камеры
