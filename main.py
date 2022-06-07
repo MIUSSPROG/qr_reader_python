@@ -41,7 +41,7 @@ canvas.create_rectangle(10, 10, 320, 180, fill='', outline='', tags="indicator")
 
 file = 'test1.xlsx'  # название файла куда будет все сохраняться(должен быть в одном каталоге с исполняющим файлом)
 timer_dist = 10*10**9
-timer_dist_repeat = 10*60 # время задержки простоя
+timer_dist_repeat = 30 # время задержки простоя
 # timer_dist_repeat = 10 # время задержки между посещениями
 end = time.perf_counter_ns()
 # основная функция обработки данных с камеры(работает рекурсивно)
@@ -66,7 +66,8 @@ def capture():
                     lbTextLimitMessage.config(text="")
                     # canvas.delete("indicator")
                     canvas.itemconfigure('indicator', fill='')
-                    avatarImage.configure(image='')
+                    avatarImage.configure(image=None)
+                    avatarImage.imgtk = None
 
             frame = imutils.resize(frame, width=320) # выводим данные с камеры в окошко шириной 320 пкс с автоматическим подгоном высоты
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # светокоррекция(нужно когда сжимаешь изображение в строке выше)
@@ -110,16 +111,8 @@ def capture():
                             save_user(visited, today) # сохраняем
                             lbText.config(text="Последний пользователь\n" + str(visited[1]), font=("roboto", 30)) # выводим последнего пользователя
                             lbTextLimitMessage.config(text="") # очищаем лэйбл где ограничение лимита
-                            response = requests.get(fio_map[user_id][4])
-                            img_data = response.content
-                            img = Image.open(BytesIO(img_data)).resize((200, 200))
-                            img = ImageTk.PhotoImage(img)
+                            display_image(fio_map[user_id][4])
 
-                            avatarImage.imgtk = img  # сохраняем в область для отображения
-                            avatarImage.configure(image=img)
-                            # data = urlopen(fio_map[user_id][4])
-                            # image = ImageTk.PhotoImage(data=data.read())
-                            # tk.Label(root, image=image).pack()
                             # time.sleep(0.5) # чтобы сразу весь лимит не использовался делаем задержку считывания с камеры qr кода в 2 секунды
                             canvas.itemconfigure('indicator', fill='#0f0')
                     end = time.perf_counter_ns()
@@ -145,6 +138,7 @@ def capture():
                                 fg='#f00')
                             lbText.config(text="Последний пользователь\n" + str(saved_visitors[-1][1]), font=("roboto", 30))
                             canvas.itemconfigure('indicator', fill='#f00')
+                        display_image(fio_map[user_id][4])
                     end = time.perf_counter_ns()
 
             root.after(1, capture) # здесь происходит самовызов функции для повторного считывания, таким образом имитируя непрерывную работу камеры
@@ -160,6 +154,14 @@ def save_user(visited, today_date):
     cur_sheet.append(visited)
     workbook.save(filename=file)
 
+
+def display_image(image_url):
+    response = requests.get(image_url)
+    img_data = response.content
+    img = Image.open(BytesIO(img_data)).resize((200, 200))
+    img = ImageTk.PhotoImage(img)
+    avatarImage.imgtk = img  # сохраняем в область для отображения
+    avatarImage.configure(image=img)
 
 root.after(1000, capture) # вызов функции capture
 root.mainloop() # запуск всего этого
