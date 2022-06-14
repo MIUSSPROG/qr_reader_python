@@ -41,7 +41,7 @@ canvas.create_rectangle(10, 10, 320, 180, fill='', outline='', tags="indicator")
 # ветка v2 -------------------
 file = 'test1.xlsx'  # название файла куда будет все сохраняться(должен быть в одном каталоге с исполняющим файлом)
 timer_dist = 10*10**9 # 10 сек
-timer_dist_repeat = 10*60 # время задержки между повторным считыванием (в сек)
+timer_dist_repeat = 10 # время задержки между повторным считыванием (в сек)
 # timer_dist_repeat = 10 # время задержки между посещениями
 end = time.perf_counter_ns()
 # основная функция обработки данных с камеры(работает рекурсивно)
@@ -123,7 +123,7 @@ def capture():
                         if (fio_map[user_id][3] - saved_visitors_map[user_id][5]) > 0: # проверяем, хвататет ли ему лимита на очередную регистрацию на мероприятие
                             row = saved_visitors_id.index(user_id) # если хватает находим его позицию(номер строки) на листе
                             workbook[today][f'F{row + 2}'] = saved_visitors_map[user_id][5] + 1 # и в ячейку столбца "посещение" добавляем +1
-                            workbook[today][f'G{row + 2}'] = datetime.now().strftime('%H:%M:%S')
+                            workbook[today][f'G{row + 2}'] = saved_visitors_map[user_id][6] + ";" + datetime.now().strftime('%H:%M:%S')
                             workbook.save(filename=file) # сохраняем все
                             # time.sleep(0.5) # очередная задержка
                             lbText.config(text="Последний пользователь\n" + str(saved_visitors_map[user_id][1]), font=("roboto", 30)) # выводим последнего пользователя
