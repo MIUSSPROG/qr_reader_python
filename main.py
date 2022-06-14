@@ -38,7 +38,7 @@ canvas = tk.Canvas()
 canvas.place(anchor=NW)
 canvas.create_rectangle(10, 10, 320, 180, fill='', outline='', tags="indicator")
 # canvas.create_rectangle(10, 10, 320, 180, fill="#0f0", outline="#0f0", tags="indicator")
-
+# ветка v2 -------------------
 file = 'test1.xlsx'  # название файла куда будет все сохраняться(должен быть в одном каталоге с исполняющим файлом)
 timer_dist = 10*10**9 # 10 сек
 timer_dist_repeat = 10*60 # время задержки между повторным считыванием (в сек)
